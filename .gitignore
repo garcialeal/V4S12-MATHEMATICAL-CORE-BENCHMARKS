@@ -1,0 +1,6 @@
+src/
+include/
+CMakeLists.txt
+build/
+*.cpp
+*.h
