@@ -1,28 +1,16 @@
 GNU GENERAL PUBLIC LICENSE
 Version 3, 29 June 2007
 
-Copyright (C) 2026 Antonio García Leal.
+Copyright (C) 2026 Antonio García Leal <support@v4s12.com>
 
-This repository contains the public benchmark evaluation harness, test datasets, 
-and documentation for the V4S12 algebraic engine.
+V4S12-MATHEMATICAL-CORE-BENCHMARKS is free software: you can redistribute it 
+and/or modify it under the terms of the GNU General Public License as published 
+by the Free Software Foundation, either version 3 of the License, or (at your 
+option) any later version.
 
-The benchmark harness and evaluation tools in this repository are free software: 
-you can redistribute them and/or modify them under the terms of the GNU General 
-Public License as published by the Free Software Foundation, either version 3 
-of the License, or (at your option) any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT 
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-========================================================================================
-PROPRIETARY SOURCE CODE & DUAL-LICENSING NOTICE:
-========================================================================================
-1. CLOSED SOURCE CORE: The V4S12 C++ engine core, S12 residue arithmetic source code, 
-   and underlying algorithmic implementations are PROPRIETARY SOFTWARE owned exclusively 
-   by Antonio García Leal. Source code files (.cpp / .h) are NOT included in this repository.
-
-2. EVALUATION BINARIES: The provided binaries (e.g., `v4s12_benchmark`) are strictly 
-   compiled, sandboxed evaluation builds intended for independent peer-review 
-   and baseline verification.
-
-3. ENTERPRISE COMMERCIAL LICENSING: To obtain source code access, integration SDKs, 
-   native dynamic libraries (.so / .dll / .wasm), or to embed V4S12 into commercial 
-   products without GPLv3 copyleft terms, contact: support@v4s12.com
-========================================================================================
+You should have received a copy of the GNU General Public License along with 
+this program. If not, see <https://www.gnu.org/licenses/>.
