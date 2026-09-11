@@ -1,63 +1,90 @@
-# V4S12 S₁₂ Geometry Benchmark Suite (N=4)
+# V4S12-MATHEMATICAL-CORE-BENCHMARKS
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Linux%20(x86__64)-lightgrey.svg)]()
-[![Core Engine](https://img.shields.io/badge/Core%20Engine-Proprietary%20C%2B%2B-red.svg)]()
+[![Core Engine](https://img.shields.io/badge/Core%20Engine-Inlined%20SIMD%20C%2B%2B-red.svg)]()
 
-Public, reproducible benchmark suite evaluating the performance and execution speed of the **V4S12 $S_{12}$ residue topology engine** against standard **IEEE 754 double-precision floating-point pipelines**.
+Public, reproducible benchmark suite evaluating the performance and execution speed of the **V4S12-MATHEMATICAL-CORE $S_{12}$ residue topology engine** against standard **IEEE 754 double-precision floating-point (FP64) pipelines**.
 
-This repository provides pre-compiled evaluation binaries, source harness wrappers, and sample domain datasets (CAD vector entities and 3D molecular structures) to independently audit and verify hyper-dimensional performance baselines without exposing proprietary source code.
+This repository provides source harnesses, CMake build systems, and sample domain datasets (CAD vectors, 3D molecular structures, and 10M LiDAR point clouds) to audit hyper-dimensional integer transformation performance.
 
 ---
 
-## Measured Performance Baseline (N=4, 1,000,000 Vertices)
+## Measured Performance Baseline (10,000,000 Vertices Stress Test)
 
-| Evaluation Metric | Standard IEEE 754 Pipeline | V4S12 $S_{12}$ Engine | Optimization / Gain |
+| Evaluation Metric | Standard IEEE 754 (FP64) | V4S12 $S_{12}$ Engine | Optimization / Gain |
 | :--- | :--- | :--- | :--- |
-| **Throughput Acceleration** | Baseline ($1.00\times$) | **$1.59\times$ Speedup** | **$+59\%$ Throughput** |
-| **Execution Latency (1M Vertices)** | $29.92\text{ ms}$ | **$18.81\text{ ms}$** | **$-37.1\%$ Latency Reduction** |
-| **Processing Rate** | $33.42\text{ M vertices/sec}$ | **$53.17\text{ M vertices/sec}$** | **$+19.75\text{ M vertices/sec}$** |
-| **Precision Error / Drift** | Cumulative FP Rounding Error | **$0.00\%$ (Exact Integer Grid)** | **Zero Floating-Point Drift** |
-| **Arithmetic Operations** | Standard FLOP Overhead | **Bitwise Butterfly Transforms (`>> 2`)** | **Zero-FLOP Grid Shifts** |
+| **Throughput Acceleration** | Baseline ($1.00\times$) | **$1.74\times$ Speedup** | **$+74\%$ Throughput** |
+| **Execution Latency (10M Vertices)** | $24.89\text{ ms}$ | **$14.33\text{ ms}$** | **$-42.4\%$ Latency Reduction** |
+| **Processing Rate** | $401.76\text{ M vert/sec}$ | **$697.94\text{ M vert/sec}$** | **$+296.18\text{ M vert/sec}$** |
+| **Data Precision / Format** | FP64 Double Precision | **12-bit $S_{12}$ Quantized Grid** | **Deterministic Integer Grid** |
+| **Pipeline Vectorization** | FP64 Auto-vectorized Loop | **Inlined Zero-Call SIMD Operations** | **Zero Function Overhead** |
 
 ---
 
-## Build & Execution
+## Technical Highlights & Optimizations
 
-To recompile the benchmark binary from source using `x86-64-v3` SIMD vectorization:
+* **Zero-Overhead Inlined Kernels:** Transformations (`v4_transform_2d_4x4`) and 12-bit S12 quantization (`s12_quantize_spline`) are directly inlined into the main engine loop, eliminating external function calls and enabling full AVX2/AVX-512 compiler auto-vectorization (`#pragma omp simd`).
+* **Bitwise Arithmetic Operations:** Floating-point multiplications and divisions are replaced with hardware-efficient bitwise arithmetic (shifts `>> 1`, `<< 1` and additions).
+* **Multi-Threaded Execution:** Parallelized via OpenMP (`#pragma omp parallel for schedule(static)`) with affinity pinning for hardware threads.
+* **Automated Metric Export:** Automatically generates structured CSV and JSON execution reports (`benchmark_results.csv` and `benchmark_results.json`) upon benchmark completion.
+
+---
+
+## Build & Execution Instructions
+
+### 1. Build via CMake
 
 ```bash
-g++ -O3 -std=c++17 -march=x86-64-v3 -flto -ffast-math -I include src/main_benchmark.cpp src/v4s12_engine.cpp -o v4s12_benchmark
+mkdir -p build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+### 2. Execution with Thread Pinning
+
+To achieve maximum SIMD and cache throughput, pin OpenMP threads to CPU cores prior to execution:
+
+```bash
+export OMP_PROC_BIND=spread
+export OMP_PLACES=threads
+export OMP_NUM_THREADS=$(nproc)
+
 ./v4s12_benchmark
 ```
+
 ---
 
-## Benchmark & Integration Protocols
+## Output Data Artifacts
 
-To ensure reproducible profiling and avoid CPU pipeline stalls during evaluation, test harnesses must adhere to the correct data ingestion path:
+Upon running `./v4s12_benchmark`, the engine writes benchmark results directly to the build directory:
 
-* **Native $S_{12}$ Zero-Copy Protocol (Benchmark Standard):**
-  Measures pure algebraic throughput directly on contiguous integer arrays in the $S_{12}$ residue domain. This path bypasses runtime type casting, unlocking the full **$1.59\times$ speedup** ($>53\text{ M}$ vertices/sec) and maximum SIMD vectorization.
+* **`benchmark_results.csv`**: Tabular metric exports for automated CI/CD logging and spreadsheet processing.
+* **`benchmark_results.json`**: Structured JSON payload for automated dashboard rendering and plotting.
 
-* **Host Floating-Point Protocol (IEEE 754 Ingestion):**
-  When bridging with host applications providing `double` or `float` streams (CAD/GIS platforms), type conversions must be batched across memory blocks using explicit SIMD vectorization (`_mm256_cvttpd_epi32` or `#pragma omp simd`).
+---
 
-> **Notice for Evaluators:** Do not perform scalar `static_cast<int32_t>` conversions inside tight vertex transformation loops. Scalar float-to-int CPU instructions (`cvttsd2si`) break instruction pipelining and obscure real engine throughput.
+## Benchmark Protocols & Guidelines
+
+* **Native S12 Protocol:** Computes 2D integer matrix transformations and spline quantization over dense memory blocks.
+* **OpenMP Thread Allocation:** Ensure `OMP_NUM_THREADS` matches physical/logical core limits to eliminate context switching latency during high-density tests (e.g., 10M LiDAR points).
+* **Compiler Optimization:** Requires `-O3` and C++17 support for vectorization hint evaluation.
+
 ---
 
 ## Repository Structure
 
 ```text
-v4s12-geometry-benchmark/
+v4s12-mathematical-core-benchmarks/
+├── CMakeLists.txt           # Build system configuration
 ├── data/
 │   ├── cad_sample.dxf       # CAD vector sample (DXF polyline entity nodes)
 │   └── protein_sample.pdb   # 3D spatial molecular data (PDB format)
 ├── include/
 │   └── v4s12_engine.h       # Engine definitions and point structure interface
 ├── src/
-│   ├── main_benchmark.cpp   # Benchmark entrypoint and timing harness
-│   └── v4s12_engine.cpp     # Vectorized batch transformation pipeline
-├── v4s12_benchmark          # Pre-compiled standalone evaluation binary (Linux x86_64)
+│   ├── main_benchmark.cpp   # Benchmark entrypoint, console output, CSV/JSON exporters
+│   └── v4s12_engine.cpp     # Inlined vectorized batch transformation pipeline
 ├── LICENSE                  # GPLv3 Harness License & Dual-Licensing Terms
 └── README.md                # Project documentation
 ```
