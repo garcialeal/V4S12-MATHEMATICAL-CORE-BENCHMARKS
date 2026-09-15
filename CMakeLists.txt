@@ -1,4 +1,6 @@
-# V4S12-MATHEMATICAL-CORE-BENCHMARKS - Geometry Engine Performance Suite
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# V4S12-MATHEMATICAL-CORE-BENCHMARKS
 #
 # Copyright (C) 2026 Antonio García Leal <support@v4s12.com>
 #
